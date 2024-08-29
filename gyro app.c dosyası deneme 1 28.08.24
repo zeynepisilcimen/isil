@@ -1,0 +1,166 @@
+//APP.C DOSYASI DENEME   
+	// TODO create task
+	// SPI init
+	// print acc_x acc_y acc_z gyro_x gyro_y temp
+
+#include "main.h"
+#include "usart.h"
+#include "cmsis_os.h"
+#include <stdio.h>
+
+#include "stm32h7xx_hal.h"
+
+SPI_HandleTypeDef hspi1;
+osThreadId_t myTask04Handle;
+
+/* Definitions for myTask04 */
+const osThreadAttr_t myTask04_attributes = {
+  .name = "myTask04",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
+void StartTask04(void *argument) {
+uint16_tread_sensor_value();
+	{
+uint8_t low_byte = SPI_Read(OUT_X_L);  // Read the low byte
+uint8_t high_byte = SPI_Read(OUT_X_H); // Read the high byte
+uint16_t sensor_value = (high_byte << 8) | low_byte; // Combine high and low bytes
+return sensor_value;
+	}
+void MX_SPI1_Init(void)
+	{
+	    hspi1.Instance = SPI1;
+	    hspi1.Init.Mode = SPI_MODE_MASTER;
+	    hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+	    hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+	    hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+	    hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+	    hspi1.Init.NSS = SPI_NSS_SOFT;  // Using software control for NSS
+	    hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+	    hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+	    hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+	    hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+	    hspi1.Init.CRCPolynomial = 10;
+	    if (HAL_SPI_Init(&hspi1) != HAL_OK)
+	    {
+	        // Initialization Error
+	        Error_Handler();
+	    }
+	}
+
+void SPI_Write(uint8_t address, uint8_t data)
+	{
+	    uint8_t buffer[2];
+	    buffer[0] = address;
+	    buffer[1] = data;
+	    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // CS Pin LOW
+	    HAL_SPI_Transmit(&hspi1, buffer, 2, HAL_MAX_DELAY);
+	    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);   // CS Pin HIGH
+	}
+
+uint8_t SPI_Read(uint8_t address)
+	{
+	    uint8_t data = 0x00;
+	    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_RESET); // CS Pin LOW
+	    HAL_SPI_Transmit(&hspi1, &address, 1, HAL_MAX_DELAY);
+	    HAL_SPI_Receive(&hspi1, &data, 1, HAL_MAX_DELAY);
+	    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4, GPIO_PIN_SET);   // CS Pin HIGH
+	    return data;
+	}
+
+
+	{
+	    HAL_Init();
+
+
+
+
+	    while (1)
+	    {
+	        SPI_Write(0x20, 0x0F);  // Example: Write a value to a register (check your sensor datasheet)
+	        uint16_t sensor_value = SPI_Read(0x20);  // Example: Read a value from a register (check your sensor datasheet)
+	        HAL_Delay(500);
+	    }
+	}
+	 /* Infinite loop */
+    for (;;) {
+        printf("acc_x\r\n");
+        osDelay(1000);
+    }
+}
+
+void appInit(void) {
+    /* Create the thread(s) */
+    myTask04Handle = osThreadNew(StartTask04, NULL, &myTask04_attributes);
+}
+
+
+//int taskMain(void) {
+//    /* Infinite loop */
+//    while (1) {
+//        // Gelen bir byte'ı bekleyip alalım
+//        uint8_t received;
+//        if (HAL_UART_Receive(&huart3, &received, 1, HAL_MAX_DELAY) == HAL_OK) {
+//            // Alınan byte'ı tekrar gönderelim (Echo)
+//            HAL_UART_Transmit(&huart3, &received, 1, HAL_MAX_DELAY);
+//        }
+//    }
+//}
+
+
+/* Function to handle printf redirection to UART */
+int _write(int file, char *ptr, int len) {
+    HAL_UART_Transmit(&huart3, (uint8_t*)ptr, len, HAL_MAX_DELAY);
+    return len;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
